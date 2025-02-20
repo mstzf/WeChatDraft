@@ -228,7 +228,6 @@ class WeChatDraft_Plugin implements Typecho_Plugin_Interface
             $content_source_url = $obj->url;
             $scriptPath = dirname(__FILE__) . '/AsyncTask.php';
             $postId = $obj->cid;
-            $escapedBaseObj = escapeshellarg($baseObj);
             $command = "php $scriptPath $postId $author $content_source_url  > /dev/null 2>&1 &";
 
             shell_exec($command);
