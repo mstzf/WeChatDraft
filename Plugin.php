@@ -129,6 +129,18 @@ class WeChatDraft_Plugin implements Typecho_Plugin_Interface
         return $mediaId;
 
     }
+    /* 上传封面图片 */
+    public static function uploadCover($imagePath){
+
+        if(empty($imagePath)){
+         return self::getMediaId();
+        }
+
+        $accessToken = self::getAccessToken();
+        $url = 'https://api.weixin.qq.com/cgi-bin/material/add_material?access_token='.$accessToken ."&type=image";
+        $res = self::curl($url,'',true,$imagePath);
+        return $res->media_id;
+    }
     /* 上传图片到素材库 */
     public static function uploadImageToWeChat($html){
         $accessToken = self::getAccessToken();
@@ -213,7 +225,7 @@ class WeChatDraft_Plugin implements Typecho_Plugin_Interface
                 $user= Typecho_Widget::widget('Widget_User');
                 $author = $user->screenName;
             }
-            $mediaId = self::getMediaId();
+            $mediaId = self::uploadCover();
             $html = self::uploadImageToWeChat($obj->content);
             $array = [
                 "articles"=>[
