@@ -1,57 +1,41 @@
 <?php
+// 加载 Typecho 核心框架
+define('__TYPECHO_ROOT_DIR__', dirname(__DIR__, 3)); // 根据实际路径调整
+require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Common.php';
+require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Db.php';
+require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Widget.php';
+require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Plugin.php';
 
-/**
- * 发布文章同步提交微信公众号草稿
- *
- * @package WeChatDraft
- * @author 心灵导师安德烈
- * @version 1.0.2
- * @link https://www.xvkes.cn
- */
-class WeChatDraft_Plugin implements Typecho_Plugin_Interface
-{
-    /**
-     * 激活插件方法,如果激活失败,直接抛出异常
-     *
-     * @access public
-     * @return void
-     * @throws Typecho_Plugin_Exception
-     */
-    /* 激活插件方法 */
-    public static function activate(){
-        Typecho_Plugin::factory('Widget_Contents_Post_Edit')->finishPublish = array('WeChatDraft_Plugin', 'render');
-        Helper::addRoute('reset_mediaid', '/reset_mediaid', 'WeChatDraft_Action', 'resetMediaId');
+// 加载 Typecho 配置文件
+require __TYPECHO_ROOT_DIR__ . '/config.inc.php';
+
+
+// 获取命令行参数
+$postId = $argv[1]; // 文章 ID
+$author =  $argv[2];
+$content_source_url =  $argv[3];
+
+class AsyncTask{
+    // 获取文章对象
+    public static function getPost($cid){
+        $db = Typecho_Db::get();
+        return $db->fetchRow($db->select()->from('table.contents')->where('cid = ?', $cid));
     }
 
-    /* 禁用插件方法 */
-    public static function deactivate(){
-        Helper::removeRoute('reset_mediaid');
-        $dirPath = dirname(__FILE__) . '/cache';
-        $files = glob($dirPath . '/*');
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                unlink($file); // 删除文件
-            }
-        }
+    // 获取文章自定义摘要
+    public static function getCustomSummary($cid){
+        $db = Typecho_Db::get();
+        $summary = $db->fetchRow($db->select('str_value')
+        ->from('table.fields')
+        ->where('cid = ?', $cid)
+        ->where('name = ?', 'customSummary'));
+        return $summary['str_value'];
     }
 
-    /* 插件配置方法 */
-    public static function config(Typecho_Widget_Helper_Form $form){
-        // 添加App ID字段
-        $appid = new Typecho_Widget_Helper_Form_Element_Text('appid', NULL, '', _t('APPID'), _t('请填写微信公众号的APPID'));
-        $form->addInput($appid);
-
-        // 添加Secret字段
-        $secret = new Typecho_Widget_Helper_Form_Element_Text('secret', NULL, '', _t('Secret'), _t('请填写微信公众号的Secret'));
-        $form->addInput($secret);
-
-        // 添加Author字段
-        $author = new Typecho_Widget_Helper_Form_Element_Text('author', NULL, '', _t('作者'), _t('请填写文章作者，默认使用个人资料中的昵称，长度不得超过8个汉字</br> 如要更改封面图片，请在公众平台上传图片后点击<a href="' . Helper::options()->index . '/reset_mediaid">重置封面缓存</a>，后续使用时会自动获取新的图片'));
-        $form->addInput($author);
+    public static function getSetting(){
+        $options = Typecho_Widget::widget('Widget_Options');
+        return $options->plugin('WeChatDraft');
     }
-
-    /* 个人用户的配置方法 */
-    public static function personalConfig(Typecho_Widget_Helper_Form $form){}
 
     /* 获取微信access_token的方法 */
     public static function getAccessToken()
@@ -85,10 +69,9 @@ class WeChatDraft_Plugin implements Typecho_Plugin_Interface
     /* 请求获取新的微信access_token的方法 */
     public static function requestAccessToken()
     {
-        $appid = Helper::options()->plugin('WeChatDraft')->appid;
-        $secret = Helper::options()->plugin('WeChatDraft')->secret;
+        $appid = self::getSetting()->appid;
+        $secret = self::getSetting()->secret;
         $url = 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid='.$appid.'&secret='.$secret;
-
         $newAccessToken = self::curl($url);
         $newAccessToken->expires_time = time()+$newAccessToken->expires_in;
 
@@ -130,7 +113,14 @@ class WeChatDraft_Plugin implements Typecho_Plugin_Interface
 
     }
     /* 上传封面图片 */
-    public static function uploadCover($imagePath){
+    public static function uploadCover($cid){
+        $db = Typecho_Db::get();
+        $imagePath = $db->fetchRow($db->select('str_value')
+        ->from('table.fields')
+        ->where('cid = ?', $cid)
+        ->where('name = ?', 'thumb'));
+
+        $imagePath = $imagePath['str_value'] ;
 
         if(empty($imagePath)){
          return self::getMediaId();
@@ -203,7 +193,6 @@ class WeChatDraft_Plugin implements Typecho_Plugin_Interface
 
         $response = curl_exec($ch);
         curl_close($ch);
-
         $responseData = json_decode($response);
         if (!isset($responseData->errmsg)) {
             return $responseData;
@@ -214,24 +203,37 @@ class WeChatDraft_Plugin implements Typecho_Plugin_Interface
     }
 
     /* 插件实现方法 */
-    public static function render($post,$obj){
-        $setting = Helper::options()->plugin('WeChatDraft');
+    public static function render($cid,$obj){
+        $setting = self::getSetting();
+        $post = self::getPost($cid);
         if (empty($post['password']) && strlen($post['text']) > 100 && $setting->appid && $setting->secret) {
-            if ($setting->author) {
-                $author = $setting->author;
-            } else {
-                $user= Typecho_Widget::widget('Widget_User');
-                $author = $user->screenName;
-            }
-            
-            $author = mb_strlen($author, 'UTF-8') > 8 ? mb_substr($author, 0, 8, 'UTF-8') : $author;
-            $content_source_url = $obj->url;
-            $scriptPath = dirname(__FILE__) . '/AsyncTask.php';
-            $postId = $obj->cid;
-            $escapedBaseObj = escapeshellarg($baseObj);
-            $command = "php $scriptPath $postId $author $content_source_url  > /dev/null 2>&1 &";
+            $accessToken = self::getAccessToken();
+            $url = 'https://api.weixin.qq.com/cgi-bin/draft/add?access_token='.$accessToken;
 
-            shell_exec($command);
+            $mediaId = self::uploadCover($cid);
+
+            $customSummary = self::getCustomSummary($cid);
+            
+            $html = self::uploadImageToWeChat($post['text']);
+            $array = [
+                "articles"=>[
+                    [
+                        "title"=>$post['title'],
+                        "author"=>$obj['author'],
+                        "content"=>$html,
+                        "content_source_url"=>$obj['content_source_url'],
+                        "thumb_media_id"=>$mediaId,
+                        "digest" => $customSummary
+                    ]
+                ]
+            ];
+            self::curl($url,json_encode($array, JSON_UNESCAPED_UNICODE),true);
         }
     }
 }
+$baseObj = array(
+    "author" => $author,
+    "content_source_url" => $content_source_url,
+);
+$AsyncTask = new AsyncTask();
+$AsyncTask->render($postId,$baseObj);
