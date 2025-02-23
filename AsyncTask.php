@@ -5,7 +5,8 @@ require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Common.php';
 require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Db.php';
 require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Widget.php';
 require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Plugin.php';
-
+require dirname(__FILE__) .  '/parsedown/Parsedown.php';
+require dirname(__FILE__) .  '/geshi/geshi.php';
 // 加载 Typecho 配置文件
 require __TYPECHO_ROOT_DIR__ . '/config.inc.php';
 
@@ -132,7 +133,8 @@ class AsyncTask{
         return $res->media_id;
     }
     /* 上传图片到素材库 */
-    public static function uploadImageToWeChat($html){
+    public static function uploadImageToWeChat($text){
+        $html = self::renderMarkdown($text);
         $accessToken = self::getAccessToken();
         $url = 'https://api.weixin.qq.com/cgi-bin/media/uploadimg?access_token='.$accessToken;
 
@@ -153,8 +155,6 @@ class AsyncTask{
 
             // 替换 HTML 中的图片标签中的 src 属性为上传后的图片 URL
             $html = str_replace($src, $wxImageUrl, $html);
-            // 修复bug，替换HTML中的#为\#
-            $html = str_replace('#', '\#', $html);
         }
 
         return $html;
@@ -201,7 +201,68 @@ class AsyncTask{
             throw new Exception($responseData->errmsg);
         }
     }
+    public static function codeHightLight($text){
+        $text = preg_replace_callback(
+            '/<pre><code(?: class="language-(.*?)")?>(.*?)<\/code><\/pre>/s',
+            function ($matches) {
+                // 如果没有匹配到语言类型，默认使用 'plaintext'
+                $language = isset($matches[1]) && !empty($matches[1]) ? $matches[1] : 'plaintext';
+                $code = $matches[2]; // 获取代码并转义 HTML 实体
+                $geshi = new GeShi($code, $language);
+                $highlighted_code = $geshi->parse_code();
+                $highlighted_code = preg_replace('/^<pre[^>]*>|<\/pre>$/', '', $highlighted_code);
+                // 将代码分割成行
+                // 分割成行
+                $lines = explode("\n", $highlighted_code);
+                $line_num = null;
+                $line_code = null;
+                $line_numbered_code = '';
+                foreach ($lines as $index => $line) {
+                    $line_num .= '<li style="visibility: visible;"></li>';
+                    $line_code .= '<code style="visibility: visible;">' . $line . '</code>';
+                }
+                return '
+                <section class="code-snippet__fix code-snippet__js" style="visibility: visible;">
+                    <ul class="code-snippet__line-index code-snippet__js" style="visibility: visible;">
+                        ' . $line_num . '
+                    </ul>
+                    <pre class="code-snippet__js" data-lang="'. $language .'" style="visibility: visible;">
+                        ' . $line_code . '
+                    </pre>
+                </section>
+                ';
+            },
+            $text
+        );
+        return $text;
+    }
+    /* 格式化标签 */
+    public static function ParseCode($text)
+    {
+        $text = self::codeHightLight($text);
+        return $text;
+    }
 
+    public static function renderMarkdown($text)
+    {
+        // 重新赋值给$text
+        $text = str_replace("<!--markdown-->", "", $text);
+        
+        // 实例化Parsedown对象
+        $parsedown = new Parsedown();
+        
+        // 将Markdown转换为HTML
+        $htmlContent = $parsedown->text($text);
+        
+        // 去掉多余的HTML标签，并做简单的调整
+        $htmlContent = strip_tags($htmlContent, '<p><br><strong><em><u><h1><h2><h3><a><pre><code>');
+        $htmlContent = self::ParseCode($htmlContent);
+        // 返回处理后的内容
+        return $htmlContent;
+    }
+
+
+    
     /* 插件实现方法 */
     public static function render($cid,$obj){
         $setting = self::getSetting();
@@ -213,8 +274,7 @@ class AsyncTask{
             $mediaId = self::uploadCover($cid);
 
             $customSummary = self::getCustomSummary($cid);
-            
-            $html = self::uploadImageToWeChat($post['text']);
+            $html = html_entity_decode(self::uploadImageToWeChat($post['text']), ENT_QUOTES, 'UTF-8');
             $array = [
                 "articles"=>[
                     [
