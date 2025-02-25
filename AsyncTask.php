@@ -5,7 +5,7 @@ require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Common.php';
 require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Db.php';
 require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Widget.php';
 require __TYPECHO_ROOT_DIR__ . '/var/Typecho/Plugin.php';
-require dirname(__FILE__) .  '/parsedown/Parsedown.php';
+require dirname(__FILE__) .  '/parsedown/CustomParsedown.php';
 require dirname(__FILE__) .  '/geshi/geshi.php';
 // 加载 Typecho 配置文件
 require __TYPECHO_ROOT_DIR__ . '/config.inc.php';
@@ -249,13 +249,10 @@ class AsyncTask{
         $text = str_replace("<!--markdown-->", "", $text);
         
         // 实例化Parsedown对象
-        $parsedown = new Parsedown();
+        $parsedown = new CustomParsedown();
         
         // 将Markdown转换为HTML
         $htmlContent = $parsedown->text($text);
-        
-        // 去掉多余的HTML标签，并做简单的调整
-        $htmlContent = strip_tags($htmlContent, '<p><br><strong><em><u><h1><h2><h3><a><pre><code>');
         $htmlContent = self::ParseCode($htmlContent);
         // 返回处理后的内容
         return $htmlContent;
