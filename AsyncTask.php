@@ -222,7 +222,9 @@ class AsyncTask{
                     $line_code .= '<code style="visibility: visible;">' . $line . '</code>';
                 }
                 return '
-                <section class="code-snippet__fix code-snippet__js" style="visibility: visible;">
+                <section class="code-snippet__fix code-snippet__js"
+                style="margin-top: 5px; margin-bottom: 5px; text-align: left; font-weight: 500; font-size: 14px; margin: 10px 0; display: block; color: #333; position: relative; background-color: rgba(0,0,0,0.03); border: 1px solid #f0f0f0; border-radius: 2px; display: flex; line-height: 20px; word-wrap: break-word !important;"
+                >
                     <ul class="code-snippet__line-index code-snippet__js" style="visibility: visible;">
                         ' . $line_num . '
                     </ul>
@@ -255,6 +257,10 @@ class AsyncTask{
         $htmlContent = $parsedown->text($text);
         $htmlContent = self::ParseCode($htmlContent);
         // 返回处理后的内容
+
+        $htmlContent = '<section id="nice" data-tool="markdown编辑器" data-website="https://markdown.com.cn/editor"
+style="font-size: 16px; color: black; padding: 25px 30px; line-height: 1.6; word-spacing: 0px; letter-spacing: 0px; word-wrap: break-word; text-align: justify; margin-top: -10px; font-family: \'PingFang SC\', \'Microsoft YaHei\', sans-serif; word-break: break-all;">' . $htmlContent . '</section>';
+
         return $htmlContent;
     }
 

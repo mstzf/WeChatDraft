@@ -19,7 +19,7 @@ class CustomParsedown extends Parsedown
                         margin-top: 30px;
                         margin-bottom: 15px;
                     ';
-                    $Block['element']['text'] = '<span style="
+                    $Block['element']['text'] = '<span class="prefix" style="display: none;"></span><span class="content" style="
                         background: hsl(216, 100%, 68%);
                         color: white;
                         padding: 3px 10px;
@@ -28,7 +28,7 @@ class CustomParsedown extends Parsedown
                         margin-right: 3px;
                         margin-top: 30px;
                         margin-bottom: 15px;
-                    ">' . $Block['element']['text'] . '</span>';
+                    ">' . $Block['element']['text'] . '</span><span class="suffix"></span>';
                     break;
 
                 case 'h2':
@@ -40,7 +40,7 @@ class CustomParsedown extends Parsedown
                         margin-top: 30px;
                         margin-bottom: 15px;
                     ';
-                    $Block['element']['text'] = '<span style="border-bottom: 1px solid hsl(216, 100%, 68%);">' . $Block['element']['text'] . '</span>';
+                    $Block['element']['text'] = '<span class="prefix" style="display: none;"></span><span class="content" style="border-bottom: 1px solid hsl(216, 100%, 68%);">' . $Block['element']['text'] . '</span><span class="suffix"></span>';
                     break;
 
                 case 'h3':
@@ -104,9 +104,7 @@ class CustomParsedown extends Parsedown
         $Block = parent::paragraph($Line);
         if ($Block !== null) {
             $Block['element']['attributes']['style'] = '
-                margin: 0px;
-                line-height: 26px;
-                font-size: 16px;
+            font-size: 16px; padding-top: 8px; padding-bottom: 8px; margin: 0; line-height: 26px; color: #666
             ';
         }
         return $Block;
@@ -169,8 +167,35 @@ class CustomParsedown extends Parsedown
         $Block = parent::blockList($Block);
         if ($Block !== null) {
             $Block['element']['attributes']['style'] = '
-                padding-left: 2em;
+            margin-top: 8px; margin-bottom: 8px; color: black; list-style-type: disc; padding-left: 2em;
             ';
+        }
+
+        if (isset($Block)) {
+            // 自定义 <li> 标签的 HTML 属性
+            $Block['li']['attributes'] = [
+                'style' => 'color: #666;' 
+            ];
+        }
+        return $Block;
+    }
+
+    protected function lines(array $lines)
+    {
+        $Block = parent::lines($lines);
+        if ($Block !== null) {
+            // 正则表达式匹配 <li> 标签及其内容
+                $pattern = '/<li([^>]*)>(.*?)<\/li>/s';
+                // 替换函数，在 <li> 的内容外层添加 <section>
+                $callback = function ($matches) {
+                    $attributes = $matches[1]; // <li> 的属性（如 class 和 style）
+                    $content = $matches[2];    // <li> 的内容
+                    return "<li$attributes><section style='margin-top: 5px; margin-bottom: 5px; line-height: 26px; text-align: left; color: rgb(1,1,1); font-weight: 500;'>
+                        $content
+                    </section></li>";
+                };
+                // 使用 preg_replace_callback 进行替换
+                $Block = preg_replace_callback($pattern, $callback, $Block);
         }
         return $Block;
     }
