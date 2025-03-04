@@ -157,6 +157,7 @@ class AsyncTask{
             $html = str_replace($src, $wxImageUrl, $html);
         }
 
+	$html = self::formatHtmlWithDOM($html);
         return $html;
     }
 
@@ -237,6 +238,36 @@ class AsyncTask{
             $text
         );
         return $text;
+    }
+    public static function formatHtmlWithDOM($html) {
+    // 创建 DOMDocument 实例
+    $dom = new DOMDocument();
+
+    // 处理HTML错误
+    libxml_use_internal_errors(true);
+
+    // 加载HTML内容
+    $dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+
+    // 清理 DOMDocument 中的多余空格
+    $xpath = new DOMXPath($dom);
+    foreach ($xpath->query('//text()') as $textNode) {
+        $textNode->nodeValue = trim(preg_replace('/\s+/', ' ', $textNode->nodeValue));
+    }
+
+    foreach ($dom->getElementsByTagName('*') as $element) {
+    if ($element->hasAttribute('style')) {
+        $style = $element->getAttribute('style');
+        $element->setAttribute('style', preg_replace('/\s+/', ' ', $style));
+    }
+    if ($element->hasAttribute('class')) {
+        $class = $element->getAttribute('class');
+        $element->setAttribute('class', preg_replace('/\s+/', ' ', $class));
+    }
+    }
+
+    // 输出格式化后的HTML
+    return $dom->saveHTML();
     }
     /* 格式化标签 */
     public static function ParseCode($text)

@@ -63,5 +63,39 @@ $htmlContent = preg_replace_callback(
 $htmlContent = '<section id="nice" data-tool="markdown编辑器" data-website="https://markdown.com.cn/editor"
 style="font-size: 16px; color: black; padding: 25px 30px; line-height: 1.6; word-spacing: 0px; letter-spacing: 0px; word-wrap: break-word; text-align: justify; margin-top: -10px; font-family: \'PingFang SC\', \'Microsoft YaHei\', sans-serif; word-break: break-all;">' . $htmlContent . '</section>';
 
+function formatHtmlWithDOM($html) {
+    // 创建 DOMDocument 实例
+    $dom = new DOMDocument();
+    
+    // 处理HTML错误
+    libxml_use_internal_errors(true);
+    
+    // 加载HTML内容
+    $dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    
+    // 清理 DOMDocument 中的多余空格
+    $xpath = new DOMXPath($dom);
+    foreach ($xpath->query('//text()') as $textNode) {
+        $textNode->nodeValue = trim(preg_replace('/\s+/', ' ', $textNode->nodeValue));
+    }
+
+    foreach ($dom->getElementsByTagName('*') as $element) {
+    if ($element->hasAttribute('style')) {
+        $style = $element->getAttribute('style');
+        $element->setAttribute('style', preg_replace('/\s+/', ' ', $style));
+    }
+    if ($element->hasAttribute('class')) {
+        $class = $element->getAttribute('class');
+        $element->setAttribute('class', preg_replace('/\s+/', ' ', $class));
+    }
+    }
+    
+    // 输出格式化后的HTML
+    return $dom->saveHTML();
+}
+
+$htmlContent = formatHtmlWithDOM($htmlContent);
+
+
 // 返回处理后的内容
 error_log($htmlContent,3,dirname(__FILE__) . "/cache/htmlContent.html");
