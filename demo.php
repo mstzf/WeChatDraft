@@ -65,33 +65,35 @@ style="font-size: 16px; color: black; padding: 25px 30px; line-height: 1.6; word
 
 function formatHtmlWithDOM($html) {
     // 创建 DOMDocument 实例
-    $dom = new DOMDocument();
-    
+    $dom = new DOMDocument('1.0', 'UTF-8');  // 设置编码为 UTF-8
+
     // 处理HTML错误
     libxml_use_internal_errors(true);
-    
-    // 加载HTML内容
+
+    // 加载HTML内容，并强制指定 UTF-8 编码
+    $html = mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8');  // 转换为HTML实体
     $dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-    
+
     // 清理 DOMDocument 中的多余空格
     $xpath = new DOMXPath($dom);
     foreach ($xpath->query('//text()') as $textNode) {
         $textNode->nodeValue = trim(preg_replace('/\s+/', ' ', $textNode->nodeValue));
     }
 
+    // 处理 style 和 class 属性中的多余空格
     foreach ($dom->getElementsByTagName('*') as $element) {
-    if ($element->hasAttribute('style')) {
-        $style = $element->getAttribute('style');
-        $element->setAttribute('style', preg_replace('/\s+/', ' ', $style));
+        if ($element->hasAttribute('style')) {
+            $style = $element->getAttribute('style');
+            $element->setAttribute('style', preg_replace('/\s+/', ' ', $style));
+        }
+        if ($element->hasAttribute('class')) {
+            $class = $element->getAttribute('class');
+            $element->setAttribute('class', preg_replace('/\s+/', ' ', $class));
+        }
     }
-    if ($element->hasAttribute('class')) {
-        $class = $element->getAttribute('class');
-        $element->setAttribute('class', preg_replace('/\s+/', ' ', $class));
-    }
-    }
-    
-    // 输出格式化后的HTML
-    return $dom->saveHTML();
+
+    // 输出格式化后的HTML，确保保存为 UTF-8 编码
+    return mb_convert_encoding($dom->saveHTML(), 'UTF-8', 'HTML-ENTITIES');
 }
 
 $htmlContent = formatHtmlWithDOM($htmlContent);
