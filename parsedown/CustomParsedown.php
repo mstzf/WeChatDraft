@@ -169,7 +169,7 @@ class CustomParsedown extends Parsedown
         if ($Block !== null && $Block['element']['name'] == 'ol') {
             $Block['element']['name'] = 'ol';  // 保持为有序列表
             $Block['element']['attributes']['style'] = '
-                margin-top: 8px; margin-bottom: 8px; color: black; padding-left: 2em;
+                margin-top: 8px; margin-bottom: 8px; color: black; list-style-type: decimal; padding-left: 2em;
             ';
         }
 
