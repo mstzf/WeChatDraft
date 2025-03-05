@@ -12,7 +12,7 @@ require __TYPECHO_ROOT_DIR__ . '/config.inc.php';
 
 
 $db = Typecho_Db::get();
-$post = $db->fetchRow($db->select()->from('table.contents')->where('cid = ?', 173));
+$post = $db->fetchRow($db->select()->from('table.contents')->where('cid = ?', 49));
 
 $text = $post['text'];
 
@@ -77,7 +77,10 @@ function formatHtmlWithDOM($html) {
     // 清理 DOMDocument 中的多余空格
     $xpath = new DOMXPath($dom);
     foreach ($xpath->query('//text()') as $textNode) {
-        $textNode->nodeValue = trim(preg_replace('/\s+/', ' ', $textNode->nodeValue));
+        // 跳过 <code> 标签中的内容
+        if ($textNode->parentNode->nodeName != 'code') {
+            $textNode->nodeValue = trim(preg_replace('/\s+/', ' ', $textNode->nodeValue));
+        }
     }
 
     // 处理 style 和 class 属性中的多余空格
@@ -95,6 +98,7 @@ function formatHtmlWithDOM($html) {
     // 输出格式化后的HTML，确保保存为 UTF-8 编码
     return mb_convert_encoding($dom->saveHTML(), 'UTF-8', 'HTML-ENTITIES');
 }
+
 
 $htmlContent = formatHtmlWithDOM($htmlContent);
 

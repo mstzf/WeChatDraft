@@ -165,20 +165,30 @@ class CustomParsedown extends Parsedown
     protected function blockList($Block)
     {
         $Block = parent::blockList($Block);
-        if ($Block !== null) {
+        
+        if ($Block !== null && $Block['element']['name'] == 'ol') {
+            $Block['element']['name'] = 'ol';  // 保持为有序列表
             $Block['element']['attributes']['style'] = '
-            margin-top: 8px; margin-bottom: 8px; color: black; list-style-type: disc; padding-left: 2em;
+                margin-top: 8px; margin-bottom: 8px; color: black; padding-left: 2em;
             ';
         }
 
+        if ($Block !== null && $Block['element']['name'] == 'ul') {
+            $Block['element']['name'] = 'ul'; 
+            $Block['element']['attributes']['style'] = '
+                margin-top: 8px; margin-bottom: 8px; color: black; list-style-type: disc; padding-left: 2em;
+            ';
+        }
+    
         if (isset($Block)) {
             // 自定义 <li> 标签的 HTML 属性
             $Block['li']['attributes'] = [
-                'style' => 'color: #666;' 
+                'style' => 'color: #666;'
             ];
         }
         return $Block;
     }
+    
 
     protected function lines(array $lines)
     {
