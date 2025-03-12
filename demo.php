@@ -12,7 +12,7 @@ require __TYPECHO_ROOT_DIR__ . '/config.inc.php';
 
 
 $db = Typecho_Db::get();
-$post = $db->fetchRow($db->select()->from('table.contents')->where('cid = ?', 49));
+$post = $db->fetchRow($db->select()->from('table.contents')->where('cid = ?', 18));
 
 $text = $post['text'];
 

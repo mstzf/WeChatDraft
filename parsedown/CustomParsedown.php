@@ -210,16 +210,44 @@ class CustomParsedown extends Parsedown
         return $Block;
     }
 
-    protected function blockTable($Line, ?array $Block = null)
+    protected function blockTable($Line, array $Block = null)
     {
         $Block = parent::blockTable($Line, $Block);
-        if ($Block !== null) {
-            $Block['element']['attributes']['class'] = 'custom-table';
-            $Block['element']['attributes']['style'] = '
-                margin: 1.5em auto;
-                width: auto;
-                border-collapse: collapse;
-            ';
+
+        return $Block;
+    }
+
+    protected function blockTableContinue($Line, array $Block){
+
+        $Block = parent::blockTableContinue($Line, $Block);
+        echo print_r( $Block, true);
+                if (isset($Block['element'])) {
+            $Block['element']['attributes']['style'] = 'display: table; text-align: left; margin: 1.5em auto; width: auto;';
+            // 自定义 tr 的样式
+            echo print_r( $Block['element'], true);
+            foreach ($Block['element']['text'] as &$section) {
+                // 检查是否是 thead 或 tbody
+                if (isset($section['name']) && ($section['name'] === 'thead' || $section['name'] === 'tbody')) {
+                    if($section['name'] === 'tbody'){
+                        $section['attributes'] = ['style' => 'border: 0;'];
+                    }
+                    // 遍历 thead 或 tbody 中的 tr
+                    foreach ($section['text'] as &$row) {
+                        if (isset($row['name']) && $row['name'] === 'tr') {
+                            // 自定义 tr 的样式
+                            $row['attributes'] = ['style' => 'border: 0; border-top: 1px solid #ccc; background-color: white;'];
+            
+                            // 遍历 tr 中的 td 或 th
+                            foreach ($row['text'] as &$cell) {
+                                if (isset($cell['name']) && ($cell['name'] === 'td' || $cell['name'] === 'th')) {
+                                    // 自定义 td 或 th 的样式
+                                    $cell['attributes'] = ['style' => 'font-size: 16px; border: 1px solid #ccc; padding: 5px 10px; color: #666; text-align: center;'];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         return $Block;
     }
