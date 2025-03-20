@@ -215,21 +215,16 @@ class AsyncTask{
                 // 将代码分割成行
                 // 分割成行
                 $lines = explode("\n", $highlighted_code);
-                $line_num = null;
                 $line_code = null;
                 $line_numbered_code = '';
                 foreach ($lines as $index => $line) {
-                    $line_num .= '<li style="visibility: visible;"></li>';
                     $line_code .= '<code style="visibility: visible;">' . $line . '</code>';
                 }
                 return '
-                <section class="code-snippet__fix code-snippet__js"
+                <section class="code-snippet__js"
                 style="margin-top: 5px; margin-bottom: 5px; text-align: left; font-weight: 500; font-size: 14px; margin: 10px 0; display: block; color: #333; position: relative; background-color: rgba(0,0,0,0.03); border: 1px solid #f0f0f0; border-radius: 2px; display: flex; line-height: 20px; word-wrap: break-word !important;"
                 >
-                    <ul class="code-snippet__line-index code-snippet__js" style="visibility: visible;">
-                        ' . $line_num . '
-                    </ul>
-                    <pre class="code-snippet__js" data-lang="'. $language .'" style="visibility: visible;">
+                    <pre class="code-snippet__js code-snippet code-snippet_nowrap" data-lang="'. $language .'" style="visibility: visible;">
                         ' . $line_code . '
                     </pre>
                 </section>

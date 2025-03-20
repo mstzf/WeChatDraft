@@ -220,11 +220,9 @@ class CustomParsedown extends Parsedown
     protected function blockTableContinue($Line, array $Block){
 
         $Block = parent::blockTableContinue($Line, $Block);
-        echo print_r( $Block, true);
                 if (isset($Block['element'])) {
             $Block['element']['attributes']['style'] = 'display: table; text-align: left; margin: 1.5em auto; width: auto;';
             // 自定义 tr 的样式
-            echo print_r( $Block['element'], true);
             foreach ($Block['element']['text'] as &$section) {
                 // 检查是否是 thead 或 tbody
                 if (isset($section['name']) && ($section['name'] === 'thead' || $section['name'] === 'tbody')) {
