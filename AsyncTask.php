@@ -322,6 +322,7 @@ style="font-size: 16px; color: black; padding: 25px 30px; line-height: 1.6; word
                     ]
                 ]
             ];
+            echo '/n' . print_r(json_encode($array, JSON_UNESCAPED_UNICODE)) . '/n';
             self::curl($url,json_encode($array, JSON_UNESCAPED_UNICODE),true);
         }
     }

@@ -283,16 +283,31 @@ class CustomParsedown extends Parsedown
 
         return $result;
     }
-
     protected function inlineLink($Excerpt)
     {
         $Inline = parent::inlineLink($Excerpt);
         if ($Inline !== null) {
-            $Inline['element']['attributes']['style'] = '
-                color: hsl(187, 100%, 45%);
-                font-weight: normal;
-                border-bottom: 1px solid hsl(187, 100%, 45%);
-            ';
+            $text = $Excerpt['text'];
+            $context = $Excerpt['context'];
+            if( '!' . $text === $context){
+                return $Inline;
+            }
+            // 处理超链接
+            $title = $Inline['element']['text'];
+            $url = $Inline['element']['attributes']['href'];
+    
+            // 将 a 标签替换为 "标题：链接" 的格式
+            $Inline['element'] = [
+                'name' => 'span', // 使用 span 标签（或者直接返回纯文本）
+                'text' => $title . ': ' . $url,
+                'attributes' => [
+                    'style' => '
+                    color: hsl(187, 100%, 45%);
+                    font-weight: normal;
+                    border-bottom: 1px solid hsl(187, 100%, 45%);
+                '
+                ],
+            ];
         }
         return $Inline;
     }
